@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
+import Articles from "./components/Articles";
 
 // This will be updated after contract deployment
 const CONTRACT_ADDRESS = "0x52d3778ffbB1024b44D55214b3385e1e0F7A1354"; 
@@ -17,7 +18,7 @@ function App() {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null);
-  const [activeTab, setActiveTab] = useState("vote"); // "vote", "facts", "about"
+  const [activeTab, setActiveTab] = useState("vote"); // "vote", "facts", "timeline", "articles"
 
   useEffect(() => {
     const init = async () => {
@@ -173,6 +174,12 @@ function App() {
               >
                 Timeline
               </button>
+              <button 
+                onClick={() => setActiveTab("articles")}
+                className={`transition-colors ${activeTab === "articles" ? "text-green-400" : "text-gray-300 hover:text-white"}`}
+              >
+                Articles
+              </button>
             </nav>
             
             <div className="flex items-center space-x-4">
@@ -194,7 +201,7 @@ function App() {
           
           {/* Mobile Navigation */}
           <div className="md:hidden flex justify-center mt-4 border-t border-gray-800 pt-4">
-            <div className="flex space-x-4">
+            <div className="flex space-x-2">
               <button 
                 onClick={() => setActiveTab("vote")}
                 className={`px-3 py-1 rounded-md ${activeTab === "vote" ? "bg-green-900/30 text-green-400" : "text-gray-300"}`}
@@ -212,6 +219,12 @@ function App() {
                 className={`px-3 py-1 rounded-md ${activeTab === "timeline" ? "bg-green-900/30 text-green-400" : "text-gray-300"}`}
               >
                 Timeline
+              </button>
+              <button 
+                onClick={() => setActiveTab("articles")}
+                className={`px-3 py-1 rounded-md ${activeTab === "articles" ? "bg-green-900/30 text-green-400" : "text-gray-300"}`}
+              >
+                Articles
               </button>
             </div>
           </div>
@@ -264,13 +277,13 @@ function App() {
                         </svg>
                       ) : (
                         <span className="flex items-center">
-                          <span className="mr-2">✅</span> Yes ({yesVotes})
+                          <span className="mr-2">✅</span> Yes, I Agree ({yesVotes})
                         </span>
                       )}
                     </button>
 
                     <button 
-                      className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center"
+                      className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-green-800 text-white font-bold rounded-lg hover:from-green-700 hover:to-green-900 transition-all transform hover:scale-[1.03] hover:shadow-lg disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center"
                       onClick={() => castVote("fYes")}
                       disabled={loading || !contract}
                     >
@@ -280,8 +293,9 @@ function App() {
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                       ) : (
-                        <span className="flex items-center">
-                          <span className="mr-2">✨</span> Absolutely Yes ({fYesVotes})
+                        <span className="flex items-center text-lg">
+                          <span className="mr-2">🔥</span> ABSOLUTELY YES! ({fYesVotes})
+                          <span className="ml-2 text-yellow-300">✨</span>
                         </span>
                       )}
                     </button>
@@ -297,10 +311,23 @@ function App() {
                   Your vote is more than just a number. It's a permanent declaration of support recorded on the Ethereum blockchain.
                   The NFT badge you'll receive serves as both a collectible and proof of your early support.
                 </p>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-400 mb-4">
                   <strong>Note:</strong> NFT badges will be airdropped to voter wallets within 14 days after voting.
                   By voting, you're also granted membership in our exclusive community with access to future initiatives.
                 </p>
+                <div className="bg-black/30 rounded-lg p-4 max-w-lg mx-auto">
+                  <h4 className="text-green-400 font-semibold mb-2">What's the difference?</h4>
+                  <div className="grid grid-cols-2 gap-4 text-left">
+                    <div>
+                      <p className="font-medium text-white mb-1">✅ Yes, I Agree:</p>
+                      <p className="text-gray-300 text-sm">I support Imran Khan as the rightful Prime Minister of Pakistan based on the election results.</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-white mb-1">🔥 ABSOLUTELY YES!:</p>
+                      <p className="text-gray-300 text-sm">I passionately and unequivocally believe Imran Khan is the ONLY legitimate leader of Pakistan! No question about it!</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -373,6 +400,9 @@ function App() {
             </div>
           </div>
         )}
+        
+        {/* Articles Tab */}
+        {activeTab === "articles" && <Articles />}
       </main>
       
       <footer className="bg-black/40 py-8 mt-12">
