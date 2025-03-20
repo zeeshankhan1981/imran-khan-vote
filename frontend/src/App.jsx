@@ -182,13 +182,20 @@ function App() {
   // Ref to track latest local votes to avoid dependency issues
   const localVotesRef = useRef({ yes: 0, fYes: 0 });
   
-  // New state for wallet-optional voting
+  // State for votes
   const [localVotes, setLocalVotes] = useState({ yes: 0, fYes: 0 });
+  const [globalVotes, setGlobalVotes] = useState({ yes: 0, fYes: 0 });
+  const [blockchainVotes, setBlockchainVotes] = useState({ yes: 0, fYes: 0 });
+  const [totalVotes, setTotalVotes] = useState({ yes: 0, fYes: 0 });
+  
+  // State for user votes
   const [hasVoted, setHasVoted] = useState(false);
+  const [userVoteChoice, setUserVoteChoice] = useState(null);
+  
+  // State for wallet connection
   const [showWalletOptions, setShowWalletOptions] = useState(false);
-  const [userVoteChoice, setUserVoteChoice] = useState(null); // Track user's vote choice
-  const [totalVotes, setTotalVotes] = useState({ yes: 0, fYes: 0 }); // Combined votes
   const [showDebugPanel, setShowDebugPanel] = useState(false); // Debug panel toggle
+  const [showThankYouPopup, setShowThankYouPopup] = useState(false);
 
   useEffect(() => {
     // Load local votes from localStorage (global votes)
@@ -390,7 +397,8 @@ function App() {
       setHasVoted(true);
       
       // Show success message
-      alert(`Your vote has been successfully recorded on the blockchain! Transaction hash: ${tx.hash}`);
+      setShowThankYouPopup(true);
+      setTimeout(() => setShowThankYouPopup(false), 5000);
       
     } catch (error) {
       console.error("Error casting vote:", error);
@@ -413,7 +421,7 @@ function App() {
       setLoading(false);
     }
   };
-  
+
   // Reset local votes (for testing)
   const resetLocalVotes = () => {
     const emptyVotes = mockAPI.resetGlobalVotes();
@@ -1457,6 +1465,28 @@ function App() {
               className="absolute top-2 right-2 text-gray-400 hover:text-white"
             >
               Close
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Thank You Popup */}
+      {showThankYouPopup && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-8 max-w-md w-full border border-green-500 shadow-lg shadow-green-500/20 text-center transform transition-all">
+            <div className="mb-4 text-green-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">Thank You!</h2>
+            <p className="text-xl text-green-300 mb-6">For voting for truth, justice, and equality.</p>
+            <p className="text-gray-300 mb-6">Your vote has been permanently recorded on the Ethereum blockchain.</p>
+            <button 
+              onClick={() => setShowThankYouPopup(false)}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-md transition-colors font-bold"
+            >
+              Continue
             </button>
           </div>
         </div>
