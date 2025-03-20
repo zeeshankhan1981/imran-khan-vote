@@ -247,6 +247,17 @@ function App() {
           });
         } catch (error) {
           console.error("Error connecting to MetaMask", error);
+          
+          // Handle specific MetaMask errors
+          if (error.code === -32002) {
+            alert("A MetaMask connection request is already pending. Please check for MetaMask popups and approve or reject the connection request.");
+          } else if (error.code === 4001) {
+            alert("You rejected the connection request. Please try again if you want to connect your wallet.");
+          } else {
+            alert(`Error connecting to wallet: ${error.message || "Unknown error"}`);
+          }
+          
+          setLoading(false);
         }
       } else {
         console.log("No wallet detected. Local voting is available.");
@@ -670,9 +681,17 @@ function App() {
           }
         } catch (error) {
           console.error("Error connecting to MetaMask despite it being detected:", error);
-          // If there was an error connecting, show wallet options as fallback
-          setShowWalletOptions(true);
-          return false;
+          
+          // Handle specific MetaMask errors
+          if (error.code === -32002) {
+            alert("A MetaMask connection request is already pending. Please check for MetaMask popups and approve or reject the connection request.");
+          } else if (error.code === 4001) {
+            alert("You rejected the connection request. Please try again if you want to connect your wallet.");
+          } else {
+            alert(`Error connecting to wallet: ${error.message || "Unknown error"}`);
+          }
+          
+          setLoading(false);
         }
       } else {
         // MetaMask is not installed or not detected
@@ -875,6 +894,13 @@ function App() {
       console.error("Error in wallet connection test:", error);
       alert(`Wallet connection test failed: ${error.message || "Unknown error"}`);
     }
+  };
+
+  // For testing the thank you popup in development
+  const simulateSuccessfulVote = () => {
+    console.log("Simulating successful vote");
+    setShowThankYouPopup(true);
+    setTimeout(() => setShowThankYouPopup(false), 5000);
   };
 
   // Election facts
@@ -1455,6 +1481,13 @@ function App() {
                     className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs"
                   >
                     Log Ethereum Details
+                  </button>
+                  
+                  <button 
+                    onClick={simulateSuccessfulVote}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-xs"
+                  >
+                    Simulate Successful Vote
                   </button>
                 </div>
               </div>
