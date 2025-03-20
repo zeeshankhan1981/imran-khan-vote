@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imran Khan Vote - No Wallet Version</title>
+    <style>
+        :root {
+            --bg-dark: #111827;
+            --bg-card: #1f2937;
+            --green: #10b981;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --purple: #4f46e5;
+            --text: #ffffff;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--green);
+        }
+        
+        .wallet-button {
+            background-color: #4338ca;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .wallet-button:hover {
+            background-color: #3730a3;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+        
+        .tab.active {
+            background-color: var(--purple);
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .image-container {
+            flex: 1;
+            max-width: 45%;
+        }
+        
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+        
+        .vote-container {
+            flex: 1;
+        }
+        
+        .vote-question {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .vote-context {
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .benefits {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--green);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .benefits h3 {
+            color: var(--green);
+            margin-bottom: 10px;
+        }
+        
+        .benefits ul {
+            list-style-type: none;
+        }
+        
+        .benefits li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .benefits li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--green);
+        }
+        
+        .vote-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .vote-button {
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .vote-button:hover {
+            opacity: 0.9;
+        }
+        
+        .yes-button {
+            background-color: var(--green);
+        }
+        
+        .absolutely-button {
+            background-color: var(--green);
+            position: relative;
+        }
+        
+        .absolutely-button:before {
+            content: "🔥";
+            margin-right: 8px;
+        }
+        
+        .vote-count {
+            text-align: right;
+            margin-top: 10px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .difference-section {
+            margin-top: 40px;
+            background-color: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .difference-section h3 {
+            color: var(--green);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .difference-options {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .difference-option {
+            flex: 1;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .difference-option h4 {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .difference-option h4:before {
+            content: "✓";
+            display: inline-block;
+            margin-right: 8px;
+            color: var(--green);
+        }
+        
+        .difference-option:last-child h4:before {
+            content: "🔥";
+            color: inherit;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .facts-list, .timeline-list, .articles-list {
+            list-style-type: none;
+        }
+        
+        .facts-list li, .timeline-list li, .articles-list li {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .timeline-date {
+            min-width: 100px;
+            font-weight: bold;
+            color: var(--green);
+        }
+        
+        .article-title {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .wallet-address {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .wallet-address span {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .wallet-address .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Imran Khan Vote</div>
+            <a href="/" class="wallet-button">I Have a Wallet</a>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('vote')">Vote</div>
+            <div class="tab" onclick="showTab('facts')">Election Facts</div>
+            <div class="tab" onclick="showTab('timeline')">Timeline</div>
+            <div class="tab" onclick="showTab('articles')">Articles</div>
+        </div>
+        
+        <div id="vote-tab" class="tab-content active">
+            <div class="main-content">
+                <div class="image-container">
+                    <img src="https://pmimrankhan.xyz/imran-khan.jpg" alt="Imran Khan" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/ff/Imran_Khan_in_2020.jpg'">
+                </div>
+                
+                <div class="vote-container">
+                    <div class="vote-question">Is Imran Khan the rightful Prime Minister of Pakistan?</div>
+                    
+                    <div class="vote-context">
+                        On February 8, 2024, Imran Khan's party won a landslide victory in Pakistan's general elections, but the results were manipulated to deny him his rightful position.
+                    </div>
+                    
+                    <div class="benefits">
+                        <h3>Benefits of Voting</h3>
+                        <ul>
+                            <li>Commemorative NFT Badge: Each voter receives a unique digital collectible proving their support</li>
+                            <li>Priority Access: Early access to future Imran Khan digital initiatives</li>
+                            <li>Community Membership: Join an exclusive community of supporters</li>
+                            <li>Historical Record: Your vote is permanently recorded on the Ethereum blockchain</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="vote-buttons">
+                        <button class="vote-button yes-button" onclick="castVote('yes')">✓ Yes, I Agree (3,542)</button>
+                        <button class="vote-button absolutely-button" onclick="castVote('absolutely')">🔥 ABSOLUTELY YES! (1,789)</button>
+                    </div>
+                    
+                    <div class="vote-count" id="vote-count">
+                        Total votes: 5,331
+                    </div>
+                    
+                    <div class="wallet-address">
+                        <div class="dot"></div>
+                        <span>0x4801...7a00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>How Your Vote Makes a Difference:</p>
+                <p>Your vote is more than just a number. It's a permanent declaration of support recorded on the Ethereum blockchain. The NFT badge you'll receive serves as both a collectible and proof of your early support.</p>
+                <p><strong>Note:</strong> NFT badges will be airdropped to voter wallets within 14 days after voting. By voting, you're also granted membership in our exclusive community with access to future initiatives.</p>
+            </div>
+            
+            <div class="difference-section">
+                <h3>What's the difference?</h3>
+                <div class="difference-options">
+                    <div class="difference-option">
+                        <h4>Yes, I Agree:</h4>
+                        <p>I support Imran Khan as the rightful Prime Minister of Pakistan based on the election results.</p>
+                    </div>
+                    <div class="difference-option">
+                        <h4>ABSOLUTELY YES!:</h4>
+                        <p>I passionately and unequivocally believe Imran Khan is the ONLY legitimate leader of Pakistan! No question about it!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="facts-tab" class="tab-content">
+            <h2 style="margin-bottom: 20px;">Election Facts</h2>
+            <ul class="facts-list">
+                <li>The 2023 Pakistani general election was held on February 8, 2023.</li>
+                <li>Imran Khan's party, Pakistan Tehreek-e-Insaf (PTI), was not allowed to use its electoral symbol.</li>
+                <li>Despite this, PTI-backed independent candidates won the most seats in the National Assembly.</li>
+                <li>The Election Commission of Pakistan (ECP) delayed announcing results, raising concerns about manipulation.</li>
+                <li>International observers and human rights organizations raised concerns about the fairness of the election.</li>
+            </ul>
+        </div>
+        
+        <div id="timeline-tab" class="tab-content">
+            <h2 style="margin-bottom: 20px;">Timeline of Events</h2>
+            <ul class="timeline-list">
+                <li class="timeline-item">
+                    <div class="timeline-date">April 2022</div>
+                    <div>Imran Khan was removed as Prime Minister through a no-confidence vote.</div>
+                </li>
+                <li class="timeline-item">
+                    <div class="timeline-date">May 2022</div>
+                    <div>Khan began nationwide protests calling for early elections.</div>
+                </li>
+                <li class="timeline-item">
+                    <div class="timeline-date">November 2022</div>
+                    <div>Khan survived an assassination attempt during a political rally.</div>
+                </li>
+                <li class="timeline-item">
+                    <div class="timeline-date">August 2023</div>
+                    <div>Khan was arrested and sentenced on multiple charges, which many view as politically motivated.</div>
+                </li>
+                <li class="timeline-item">
+                    <div class="timeline-date">February 2024</div>
+                    <div>Despite PTI-backed candidates winning the most seats, a coalition government was formed without them.</div>
+                </li>
+            </ul>
+        </div>
+        
+        <div id="articles-tab" class="tab-content">
+            <h2 style="margin-bottom: 20px;">Recent Articles</h2>
+            <ul class="articles-list">
+                <li>
+                    <h3 class="article-title">The Controversial 2023 Pakistani Election</h3>
+                    <p>An analysis of the election process and concerns raised by international observers.</p>
+                </li>
+                <li>
+                    <h3 class="article-title">Imran Khan: From Cricket Star to Political Prisoner</h3>
+                    <p>The journey of Imran Khan and his current legal challenges.</p>
+                </li>
+                <li>
+                    <h3 class="article-title">Pakistan's Democratic Future</h3>
+                    <p>Examining the implications of recent events on Pakistan's democratic institutions.</p>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Vote counts
+        let yesVotes = 3542;
+        let absolutelyVotes = 1789;
+        let totalVotes = yesVotes + absolutelyVotes;
+        let hasVoted = false;
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab and add active class to its button
+            document.getElementById(tabName + '-tab').classList.add('active');
+            document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
+        }
+        
+        function castVote(type) {
+            if (hasVoted) {
+                alert("You have already voted!");
+                return;
+            }
+            
+            if (type === 'yes') {
+                yesVotes++;
+                document.querySelector('.yes-button').textContent = `✓ Yes, I Agree (${yesVotes.toLocaleString()})`;
+            } else if (type === 'absolutely') {
+                absolutelyVotes++;
+                document.querySelector('.absolutely-button').textContent = `🔥 ABSOLUTELY YES! (${absolutelyVotes.toLocaleString()})`;
+            }
+            
+            totalVotes++;
+            document.getElementById('vote-count').textContent = `Total votes: ${totalVotes.toLocaleString()}`;
+            
+            // Disable buttons after voting
+            document.querySelectorAll('.vote-button').forEach(button => {
+                button.style.opacity = '0.7';
+                button.style.cursor = 'not-allowed';
+            });
+            
+            hasVoted = true;
+            
+            // Store vote in localStorage
+            localStorage.setItem('hasVoted', 'true');
+            
+            alert("Thank you for your vote! Your support for Imran Khan has been recorded.");
+        }
+        
+        // Check if user has already voted
+        window.onload = function() {
+            if (localStorage.getItem('hasVoted') === 'true') {
+                hasVoted = true;
+                document.querySelectorAll('.vote-button').forEach(button => {
+                    button.style.opacity = '0.7';
+                    button.style.cursor = 'not-allowed';
+                });
+            }
+            
+            // Format numbers with commas
+            document.querySelector('.yes-button').textContent = `✓ Yes, I Agree (${yesVotes.toLocaleString()})`;
+            document.querySelector('.absolutely-button').textContent = `🔥 ABSOLUTELY YES! (${absolutelyVotes.toLocaleString()})`;
+            document.getElementById('vote-count').textContent = `Total votes: ${totalVotes.toLocaleString()}`;
+        };
+    </script>
+</body>
+</html>

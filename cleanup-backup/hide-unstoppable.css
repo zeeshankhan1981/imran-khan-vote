@@ -1,0 +1,13 @@
+/* Hide unstoppable domain link */
+a[href*="unstoppable"],
+a[href*="Unstoppable"],
+div:has(> a[href*="unstoppable"]),
+div:has(> a[href*="Unstoppable"]),
+button:has(span:contains("Unstoppable")),
+button:has(span:contains("unstoppable")),
+*[class*="unstoppable"],
+*[id*="unstoppable"],
+*[class*="Unstoppable"],
+*[id*="Unstoppable"] {
+    display: none !important;
+}

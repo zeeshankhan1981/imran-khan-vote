@@ -412,11 +412,6 @@ function App() {
               <p className="text-sm text-gray-400">
                 This dApp runs on Ethereum mainnet. Make sure your wallet is connected to the Ethereum network.
               </p>
-              <p className="text-sm text-gray-400 mt-2">
-                <a href="/unstoppable-domain-guide.html" target="_blank" className="text-green-400 hover:underline">
-                  Access via our Unstoppable Domain
-                </a>
-              </p>
             </div>
             
             <div className="flex space-x-4">

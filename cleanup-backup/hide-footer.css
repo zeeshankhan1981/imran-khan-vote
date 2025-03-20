@@ -1,0 +1,39 @@
+/* Hide unstoppable domain link and other footer elements */
+a[href*="unstoppable"],
+a[href*="Unstoppable"],
+div:has(> a[href*="unstoppable"]),
+div:has(> a[href*="Unstoppable"]),
+button:has(span:contains("Unstoppable")),
+button:has(span:contains("unstoppable")),
+*[class*="unstoppable"],
+*[id*="unstoppable"],
+*[class*="Unstoppable"],
+*[id*="Unstoppable"],
+footer a[href*="unstoppable"],
+footer p:contains("Unstoppable Domain"),
+footer div:contains("Unstoppable Domain") {
+    display: none !important;
+}
+
+/* Target the specific footer text */
+footer p,
+div[class*="footer"] p,
+div[id*="footer"] p,
+*[class*="footer"] a[href*="unstoppable"],
+*[id*="footer"] a[href*="unstoppable"] {
+    display: none !important;
+}
+
+/* Hide the entire footer section if needed */
+footer,
+div[class*="footer"],
+div[id*="footer"] {
+    display: none !important;
+}
+
+/* Hide specific text in any element */
+*:contains("Access via our Unstoppable Domain") {
+    display: none !important;
+}
+
+/* Alternative approach using JavaScript */

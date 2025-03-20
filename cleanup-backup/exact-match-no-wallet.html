@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imran Khan Vote - No Wallet Version</title>
+    <style>
+        :root {
+            --bg-dark: #111827;
+            --bg-card: #1f2937;
+            --green: #10b981;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --purple: #4f46e5;
+            --text: #ffffff;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--green);
+        }
+        
+        .wallet-button {
+            background-color: #4338ca;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .wallet-button:hover {
+            background-color: #3730a3;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+        
+        .tab.active {
+            background-color: var(--purple);
+        }
+        
+        .content {
+            background-color: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .vote-question {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .vote-description {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .vote-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .vote-button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .yes-button {
+            background-color: var(--green);
+        }
+        
+        .no-button {
+            background-color: var(--red);
+        }
+        
+        .wallet-notice {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .wallet-notice h3 {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+        
+        .info-section {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .info-title {
+            color: var(--green);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .info-section ul, .info-section ol {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .info-section li {
+            margin-bottom: 5px;
+        }
+        
+        .get-metamask-button {
+            background-color: var(--blue);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .get-metamask-button:hover {
+            background-color: #2563eb;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .facts-list, .timeline-list, .articles-list {
+            list-style-type: none;
+        }
+        
+        .facts-list li, .timeline-list li, .articles-list li {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .timeline-date {
+            min-width: 100px;
+            font-weight: bold;
+            color: var(--green);
+        }
+        
+        .article-title {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Imran Khan Vote</div>
+            <a href="/" class="wallet-button">I Have a Wallet</a>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('vote')">Vote</div>
+            <div class="tab" onclick="showTab('facts')">Election Facts</div>
+            <div class="tab" onclick="showTab('timeline')">Timeline</div>
+            <div class="tab" onclick="showTab('articles')">Articles</div>
+        </div>
+        
+        <div class="content">
+            <div id="vote-tab" class="tab-content active">
+                <div class="vote-question">Is Imran Khan the rightful Prime Minister of Pakistan?</div>
+                <div class="vote-description">Cast your vote on the blockchain to make your voice heard.</div>
+                
+                <div class="vote-buttons">
+                    <button class="vote-button yes-button" disabled>Vote Yes</button>
+                    <button class="vote-button no-button" disabled>Vote No</button>
+                </div>
+                
+                <div class="wallet-notice">
+                    <h3>Web3 Wallet Required</h3>
+                    <p>To vote on the blockchain, you need a Web3 wallet like MetaMask. This ensures your vote is securely recorded and you can receive your NFT badge.</p>
+                    
+                    <div class="info-section">
+                        <h4 class="info-title">What is a Web3 Wallet?</h4>
+                        <p>A Web3 wallet like MetaMask is a digital wallet that allows you to interact with blockchain applications. It's similar to a digital passport for the decentralized web.</p>
+                        
+                        <h4 class="info-title">How to Get Started:</h4>
+                        <ol>
+                            <li><strong>Install MetaMask:</strong> Download the browser extension from the official website.</li>
+                            <li><strong>Create a Wallet:</strong> Follow the setup instructions to create your wallet and save your recovery phrase in a safe place.</li>
+                            <li><strong>Add Ethereum:</strong> You'll need a small amount of ETH to pay for transaction fees (gas).</li>
+                            <li><strong>Connect to this Site:</strong> After installing, refresh this page and click "Connect Wallet" when prompted.</li>
+                        </ol>
+                        
+                        <h4 class="info-title">Benefits of Using a Web3 Wallet:</h4>
+                        <ul>
+                            <li><strong>True Ownership:</strong> You control your digital assets and identity.</li>
+                            <li><strong>Permanent Record:</strong> Your vote is recorded on the blockchain forever.</li>
+                            <li><strong>Receive NFTs:</strong> Get your commemorative NFT badge after voting.</li>
+                            <li><strong>Join the Movement:</strong> Become part of the Web3 revolution.</li>
+                        </ul>
+                    </div>
+                    
+                    <a href="https://metamask.io/download/" target="_blank" class="get-metamask-button">Get MetaMask</a>
+                    <p style="margin-top: 10px; font-size: 14px;">After installing, refresh this page to participate in the blockchain vote.</p>
+                </div>
+            </div>
+            
+            <div id="facts-tab" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Election Facts</h2>
+                <ul class="facts-list">
+                    <li>The 2023 Pakistani general election was held on February 8, 2023.</li>
+                    <li>Imran Khan's party, Pakistan Tehreek-e-Insaf (PTI), was not allowed to use its electoral symbol.</li>
+                    <li>Despite this, PTI-backed independent candidates won the most seats in the National Assembly.</li>
+                    <li>The Election Commission of Pakistan (ECP) delayed announcing results, raising concerns about manipulation.</li>
+                    <li>International observers and human rights organizations raised concerns about the fairness of the election.</li>
+                </ul>
+            </div>
+            
+            <div id="timeline-tab" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Timeline of Events</h2>
+                <ul class="timeline-list">
+                    <li class="timeline-item">
+                        <div class="timeline-date">April 2022</div>
+                        <div>Imran Khan was removed as Prime Minister through a no-confidence vote.</div>
+                    </li>
+                    <li class="timeline-item">
+                        <div class="timeline-date">May 2022</div>
+                        <div>Khan began nationwide protests calling for early elections.</div>
+                    </li>
+                    <li class="timeline-item">
+                        <div class="timeline-date">November 2022</div>
+                        <div>Khan survived an assassination attempt during a political rally.</div>
+                    </li>
+                    <li class="timeline-item">
+                        <div class="timeline-date">August 2023</div>
+                        <div>Khan was arrested and sentenced on multiple charges, which many view as politically motivated.</div>
+                    </li>
+                    <li class="timeline-item">
+                        <div class="timeline-date">February 2024</div>
+                        <div>Despite PTI-backed candidates winning the most seats, a coalition government was formed without them.</div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div id="articles-tab" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Recent Articles</h2>
+                <ul class="articles-list">
+                    <li>
+                        <h3 class="article-title">The Controversial 2023 Pakistani Election</h3>
+                        <p>An analysis of the election process and concerns raised by international observers.</p>
+                    </li>
+                    <li>
+                        <h3 class="article-title">Imran Khan: From Cricket Star to Political Prisoner</h3>
+                        <p>The journey of Imran Khan and his current legal challenges.</p>
+                    </li>
+                    <li>
+                        <h3 class="article-title">Pakistan's Democratic Future</h3>
+                        <p>Examining the implications of recent events on Pakistan's democratic institutions.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab and add active class to its button
+            document.getElementById(tabName + '-tab').classList.add('active');
+            document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
+        }
+    </script>
+</body>
+</html>

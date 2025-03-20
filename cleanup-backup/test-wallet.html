@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WalletConnect Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a202c;
+            color: white;
+        }
+        button {
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #4338ca;
+        }
+        .card {
+            background-color: #2d3748;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .address {
+            word-break: break-all;
+            background-color: #1a202c;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>WalletConnect Test</h1>
+    
+    <div class="card">
+        <h2>Connection Status</h2>
+        <p id="status">Not connected</p>
+        
+        <div id="account-details" style="display: none;">
+            <h3>Connected Account</h3>
+            <div class="address" id="account-address"></div>
+            <h3>Chain ID</h3>
+            <div id="chain-id"></div>
+        </div>
+        
+        <button id="connect-metamask">Connect with MetaMask</button>
+        <button id="connect-walletconnect">Connect with WalletConnect</button>
+        <button id="disconnect" style="display: none;">Disconnect</button>
+    </div>
+    
+    <script>
+        let web3;
+        let provider;
+        
+        // Check if MetaMask is available
+        const isMetaMaskAvailable = typeof window.ethereum !== 'undefined';
+        const connectMetaMaskBtn = document.getElementById('connect-metamask');
+        const connectWalletConnectBtn = document.getElementById('connect-walletconnect');
+        const disconnectBtn = document.getElementById('disconnect');
+        const statusEl = document.getElementById('status');
+        const accountDetailsEl = document.getElementById('account-details');
+        const accountAddressEl = document.getElementById('account-address');
+        const chainIdEl = document.getElementById('chain-id');
+        
+        if (!isMetaMaskAvailable) {
+            connectMetaMaskBtn.disabled = true;
+            connectMetaMaskBtn.textContent = 'MetaMask not available';
+        }
+        
+        // Connect to MetaMask
+        connectMetaMaskBtn.addEventListener('click', async () => {
+            if (isMetaMaskAvailable) {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const account = accounts[0];
+                    
+                    web3 = new Web3(window.ethereum);
+                    const chainId = await web3.eth.getChainId();
+                    
+                    updateUI(account, chainId);
+                    
+                    window.ethereum.on('accountsChanged', (accounts) => {
+                        updateUI(accounts[0], chainId);
+                    });
+                    
+                    window.ethereum.on('chainChanged', (chainId) => {
+                        window.location.reload();
+                    });
+                } catch (error) {
+                    console.error('Error connecting to MetaMask:', error);
+                    statusEl.textContent = 'Error connecting to MetaMask: ' + error.message;
+                }
+            }
+        });
+        
+        // Connect to WalletConnect
+        connectWalletConnectBtn.addEventListener('click', async () => {
+            try {
+                // Initialize WalletConnect provider
+                provider = new WalletConnectProvider.default({
+                    infuraId: "27e484dcd9e3efcfd25a83a78777cdf1", // Replace with your Infura ID
+                    qrcode: true,
+                });
+                
+                // Enable session (triggers QR Code modal)
+                await provider.enable();
+                
+                web3 = new Web3(provider);
+                const accounts = await web3.eth.getAccounts();
+                const chainId = await web3.eth.getChainId();
+                
+                updateUI(accounts[0], chainId);
+                
+                // Subscribe to accounts change
+                provider.on("accountsChanged", (accounts) => {
+                    updateUI(accounts[0], chainId);
+                });
+                
+                // Subscribe to chainId change
+                provider.on("chainChanged", (chainId) => {
+                    window.location.reload();
+                });
+                
+                // Subscribe to disconnect
+                provider.on("disconnect", () => {
+                    resetUI();
+                });
+            } catch (error) {
+                console.error('Error connecting with WalletConnect:', error);
+                statusEl.textContent = 'Error connecting with WalletConnect: ' + error.message;
+            }
+        });
+        
+        // Disconnect
+        disconnectBtn.addEventListener('click', async () => {
+            if (provider && provider.disconnect) {
+                await provider.disconnect();
+            }
+            resetUI();
+        });
+        
+        function updateUI(account, chainId) {
+            statusEl.textContent = 'Connected';
+            accountDetailsEl.style.display = 'block';
+            accountAddressEl.textContent = account;
+            chainIdEl.textContent = chainId;
+            disconnectBtn.style.display = 'block';
+            connectMetaMaskBtn.style.display = 'none';
+            connectWalletConnectBtn.style.display = 'none';
+        }
+        
+        function resetUI() {
+            statusEl.textContent = 'Not connected';
+            accountDetailsEl.style.display = 'none';
+            disconnectBtn.style.display = 'none';
+            connectMetaMaskBtn.style.display = 'inline-block';
+            connectWalletConnectBtn.style.display = 'inline-block';
+            web3 = null;
+            provider = null;
+        }
+    </script>
+</body>
+</html>

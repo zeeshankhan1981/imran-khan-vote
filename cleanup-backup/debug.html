@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Console</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #output {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Website Debug Console</h1>
+    <p>This page will display any console errors from the main website.</p>
+    <div id="output">Loading...</div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function fetchAndCheckWebsite() {
+            output.innerHTML = "Checking website at " + new Date().toLocaleTimeString() + "...\n\n";
+            
+            // Create an iframe to load the website
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            // Listen for errors
+            window.addEventListener('error', function(event) {
+                output.innerHTML += "ERROR: " + event.message + " at " + event.filename + ":" + event.lineno + "\n";
+            }, {once: true});
+            
+            // Check if window.ethereum exists
+            output.innerHTML += "window.ethereum exists: " + (typeof window.ethereum !== 'undefined') + "\n";
+            
+            // Try to load the website
+            try {
+                iframe.src = 'https://pmimrankhan.xyz';
+                
+                // Check resources
+                setTimeout(() => {
+                    try {
+                        const resources = performance.getEntriesByType('resource');
+                        output.innerHTML += "\nLoaded Resources:\n";
+                        resources.forEach(resource => {
+                            output.innerHTML += resource.name + " - " + resource.initiatorType + " - " + 
+                                               (resource.transferSize ? "Size: " + resource.transferSize + " bytes" : "From cache") + 
+                                               (resource.duration ? " - Load time: " + resource.duration.toFixed(2) + "ms" : "") + "\n";
+                        });
+                    } catch (e) {
+                        output.innerHTML += "\nError checking resources: " + e.message + "\n";
+                    }
+                }, 3000);
+            } catch (e) {
+                output.innerHTML += "Error loading iframe: " + e.message + "\n";
+            }
+        }
+        
+        // Run the check
+        fetchAndCheckWebsite();
+    </script>
+</body>
+</html>
