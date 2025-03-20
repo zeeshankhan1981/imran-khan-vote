@@ -18,14 +18,14 @@
    - [x] Create deployment package with `./deploy-to-production.sh`
 
 2. **Server Configuration**
-   - [ ] Ensure Nginx is properly configured on the server
-   - [ ] Verify SSL certificates are valid and up-to-date
-   - [ ] Check server firewall settings
+   - [x] Ensure Nginx is properly configured on the server
+   - [x] Verify SSL certificates are valid and up-to-date
+   - [x] Check server firewall settings
 
 3. **Deployment**
-   - [ ] Run the deployment script: `./deploy-to-production.sh`
-   - [ ] Verify files are correctly placed in `/var/www/imran-khan-vote`
-   - [ ] Check file permissions are set correctly
+   - [x] Run the deployment script: `./deploy-to-production.sh`
+   - [x] Verify files are correctly placed in `/var/www/imran-khan-vote`
+   - [x] Check file permissions are set correctly
 
 4. **Post-Deployment Verification**
    - [ ] Test the application at http://pmimrankhan.xyz
