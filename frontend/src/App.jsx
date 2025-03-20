@@ -10,6 +10,44 @@ const ABI = [
   "function getVotes() public view returns (uint256, uint256)"
 ];
 
+// Development mode flag
+const isDev = import.meta.env.DEV;
+
+// For development testing - simulating a backend API with localStorage
+// In production, this would be replaced with a real backend API
+const LOCAL_STORAGE_KEY = "imranKhanGlobalVotes";
+
+// Mock API functions for local vote tracking
+const mockAPI = {
+  // Get global votes from localStorage
+  getGlobalVotes: () => {
+    const storedVotes = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return storedVotes ? JSON.parse(storedVotes) : { yes: 0, fYes: 0 };
+  },
+  
+  // Update global votes in localStorage
+  updateGlobalVotes: (choice) => {
+    const currentVotes = mockAPI.getGlobalVotes();
+    const newVotes = { ...currentVotes };
+    
+    if (choice === "yes") {
+      newVotes.yes += 1;
+    } else if (choice === "fYes") {
+      newVotes.fYes += 1;
+    }
+    
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newVotes));
+    return newVotes;
+  },
+  
+  // Reset global votes in localStorage
+  resetGlobalVotes: () => {
+    const emptyVotes = { yes: 0, fYes: 0 };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(emptyVotes));
+    return emptyVotes;
+  }
+};
+
 function App() {
   const [yesVotes, setYesVotes] = useState(0);
   const [fYesVotes, setFYesVotes] = useState(0);
@@ -19,8 +57,32 @@ function App() {
   const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null);
   const [activeTab, setActiveTab] = useState("vote"); // "vote", "facts", "timeline", "articles"
+  
+  // New state for wallet-optional voting
+  const [localVotes, setLocalVotes] = useState({ yes: 0, fYes: 0 });
+  const [hasVoted, setHasVoted] = useState(false);
+  const [showWalletPrompt, setShowWalletPrompt] = useState(null);
+  const [userVoteChoice, setUserVoteChoice] = useState(null); // Track user's vote choice
+  const [totalVotes, setTotalVotes] = useState({ yes: 0, fYes: 0 }); // Combined votes
+  const [showDebugPanel, setShowDebugPanel] = useState(false); // Debug panel toggle
 
   useEffect(() => {
+    // Load local votes from localStorage (global votes)
+    const globalVotes = mockAPI.getGlobalVotes();
+    setLocalVotes(globalVotes);
+    
+    // Check if user has already voted
+    const votedStatus = localStorage.getItem("hasVoted");
+    if (votedStatus) {
+      setHasVoted(JSON.parse(votedStatus));
+    }
+    
+    // Load user's vote choice
+    const savedChoice = localStorage.getItem("userVoteChoice");
+    if (savedChoice) {
+      setUserVoteChoice(savedChoice);
+    }
+    
     const init = async () => {
       if (window.ethereum) {
         try {
@@ -49,7 +111,7 @@ function App() {
           console.error("Error connecting to MetaMask", error);
         }
       } else {
-        console.log("Please install MetaMask!");
+        console.log("No wallet detected. Local voting is available.");
       }
     };
     
@@ -60,6 +122,25 @@ function App() {
         window.ethereum.removeAllListeners();
       }
     };
+  }, []);
+
+  useEffect(() => {
+    setTotalVotes({
+      yes: yesVotes + localVotes.yes,
+      fYes: fYesVotes + localVotes.fYes
+    });
+  }, [yesVotes, fYesVotes, localVotes]);
+
+  // Poll for global vote updates every 2 seconds in development mode
+  useEffect(() => {
+    if (!isDev) return;
+    
+    const pollInterval = setInterval(() => {
+      const globalVotes = mockAPI.getGlobalVotes();
+      setLocalVotes(globalVotes);
+    }, 2000);
+    
+    return () => clearInterval(pollInterval);
   }, []);
 
   const fetchVotes = async (contractInstance) => {
@@ -75,24 +156,95 @@ function App() {
   };
 
   const castVote = async (choice) => {
-    if (!contract) {
-      alert("Please connect to MetaMask first!");
+    if (contract) {
+      // If wallet is connected, cast blockchain vote
+      setLoading(true);
+      try {
+        const tx = choice === "yes" 
+          ? await contract.voteYes() 
+          : await contract.voteFYes();
+        
+        await tx.wait();
+        fetchVotes(contract);
+        
+        // Also mark as voted locally and save the choice
+        setHasVoted(true);
+        setUserVoteChoice(choice);
+        localStorage.setItem("hasVoted", JSON.stringify(true));
+        localStorage.setItem("userVoteChoice", choice);
+      } catch (error) {
+        console.error("Error casting vote:", error);
+        alert("Error casting vote. Check console for details.");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // If no wallet is connected, show wallet prompt with the choice
+      setShowWalletPrompt(choice);
+    }
+  };
+  
+  // New function for voting without wallet
+  const voteWithoutWallet = (choice) => {
+    // Update global vote count using our mock API
+    const newVotes = mockAPI.updateGlobalVotes(choice);
+    setLocalVotes(newVotes);
+    
+    // Mark as voted and save the choice
+    setHasVoted(true);
+    setUserVoteChoice(choice);
+    localStorage.setItem("hasVoted", JSON.stringify(true));
+    localStorage.setItem("userVoteChoice", choice);
+    
+    // Hide the wallet prompt
+    setShowWalletPrompt(null);
+  };
+  
+  // Reset local votes (for testing)
+  const resetLocalVotes = () => {
+    const emptyVotes = mockAPI.resetGlobalVotes();
+    setLocalVotes(emptyVotes);
+    setHasVoted(false);
+    setUserVoteChoice(null);
+    localStorage.removeItem("hasVoted");
+    localStorage.removeItem("userVoteChoice");
+  };
+
+  // Toggle debug panel (dev mode only)
+  const toggleDebugPanel = () => {
+    setShowDebugPanel(!showDebugPanel);
+  };
+
+  // Function to handle wallet connection after local voting
+  const connectWalletAfterVoting = async () => {
+    if (!window.ethereum) {
+      alert("No wallet detected. Please install MetaMask or another Ethereum wallet.");
       return;
     }
     
-    setLoading(true);
     try {
-      const tx = choice === "yes" 
-        ? await contract.voteYes() 
-        : await contract.voteFYes();
+      // Connect wallet
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      setAccount(accounts[0]);
       
-      await tx.wait();
+      // Create provider, signer and contract instances
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      setProvider(provider);
+      
+      const signer = await provider.getSigner();
+      setSigner(signer);
+      
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      setContract(contract);
+      
+      // Fetch blockchain votes
       fetchVotes(contract);
+      
+      // Notify user that their local vote will be migrated to blockchain when they cast a vote
+      alert("Your wallet is now connected! Your local vote will be migrated to the blockchain when you cast a vote using your wallet.");
     } catch (error) {
-      console.error("Error casting vote:", error);
-      alert("Error casting vote. Check console for details.");
-    } finally {
-      setLoading(false);
+      console.error("Error connecting wallet:", error);
+      alert("Error connecting wallet. Please try again.");
     }
   };
 
@@ -253,56 +405,151 @@ function App() {
                       but the results were manipulated to deny him his rightful position.
                     </p>
                     
-                    <div className="bg-green-900/20 border-l-4 border-green-500 p-4 mb-6 rounded">
-                      <h3 className="font-bold text-lg text-green-400 mb-2">Benefits of Voting</h3>
-                      <ul className="list-disc pl-5 text-gray-200">
-                        <li className="mb-1">Commemorative NFT Badge: Each voter receives a unique digital collectible proving their support</li>
-                        <li className="mb-1">Priority Access: Early access to future Imran Khan digital initiatives</li>
-                        <li className="mb-1">Community Membership: Join an exclusive community of supporters</li>
-                        <li>Historical Record: Your vote is permanently recorded on the Ethereum blockchain</li>
-                      </ul>
-                    </div>
+                    {account ? (
+                      <div className="bg-green-900/20 border-l-4 border-green-500 p-4 mb-6 rounded">
+                        <h3 className="font-bold text-lg text-green-400 mb-2">Benefits of Voting</h3>
+                        <ul className="list-disc pl-5 text-gray-200">
+                          <li className="mb-1">Commemorative NFT Badge: Each voter receives a unique digital collectible proving their support</li>
+                          <li className="mb-1">Priority Access: Early access to future Imran Khan digital initiatives</li>
+                          <li className="mb-1">Community Membership: Join an exclusive community of supporters</li>
+                          <li>Historical Record: Your vote is permanently recorded on the Ethereum blockchain</li>
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-900/20 border-l-4 border-yellow-500 p-4 mb-6 rounded">
+                        <h3 className="font-bold text-lg text-yellow-400 mb-2">Vote Without a Wallet</h3>
+                        <p className="text-gray-200 mb-2">
+                          You can vote without connecting a wallet, but your vote will only be stored locally and not on the blockchain.
+                        </p>
+                        <p className="text-gray-200">
+                          <span className="text-yellow-400 font-semibold">Connect a wallet</span> to receive an NFT badge and other benefits.
+                        </p>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-3">
-                    <button 
-                      className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center"
-                      onClick={() => castVote("yes")}
-                      disabled={loading || !contract}
-                    >
-                      {loading ? (
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <span className="flex items-center">
-                          <span className="mr-2">✅</span> Yes, I Agree ({yesVotes})
-                        </span>
-                      )}
-                    </button>
+                    {hasVoted ? (
+                      <div className="bg-green-900/30 p-4 rounded-lg text-center">
+                        <h3 className="text-xl font-bold text-green-400 mb-2">Thank You for Voting!</h3>
+                        <p className="text-gray-300">Your vote has been recorded.</p>
+                        
+                        {/* Show vote counter */}
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                          <div className={`bg-black/30 p-3 rounded-lg ${userVoteChoice === "yes" ? "ring-2 ring-green-400" : ""}`}>
+                            <div className="text-2xl font-bold text-green-400">{totalVotes.yes}</div>
+                            <div className="text-sm text-gray-400">Yes, I Agree</div>
+                            {userVoteChoice === "yes" && <div className="text-xs text-green-400 mt-1">Your choice</div>}
+                          </div>
+                          <div className={`bg-black/30 p-3 rounded-lg ${userVoteChoice === "fYes" ? "ring-2 ring-green-400" : ""}`}>
+                            <div className="text-2xl font-bold text-green-400">{totalVotes.fYes}</div>
+                            <div className="text-sm text-gray-400">ABSOLUTELY YES!</div>
+                            {userVoteChoice === "fYes" && <div className="text-xs text-green-400 mt-1">Your choice</div>}
+                          </div>
+                        </div>
+                        
+                        {!account && (
+                          <div className="mt-4">
+                            <p className="text-sm text-gray-400 mb-2">Connect a wallet to receive NFT benefits:</p>
+                            <button 
+                              onClick={connectWalletAfterVoting}
+                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+                            >
+                              Connect Wallet
+                            </button>
+                          </div>
+                        )}
+                        {/* For testing - allow reset of local votes */}
+                        <button 
+                          onClick={resetLocalVotes}
+                          className="mt-4 text-xs text-gray-500 hover:text-gray-400"
+                        >
+                          Reset Vote (Testing Only)
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button 
+                          className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center"
+                          onClick={() => castVote("yes")}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <span className="flex items-center">
+                              <span className="mr-2">✅</span> Yes, I Agree ({totalVotes.yes})
+                            </span>
+                          )}
+                        </button>
 
-                    <button 
-                      className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-green-800 text-white font-bold rounded-lg hover:from-green-700 hover:to-green-900 transition-all transform hover:scale-[1.03] hover:shadow-lg disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center"
-                      onClick={() => castVote("fYes")}
-                      disabled={loading || !contract}
-                    >
-                      {loading ? (
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <span className="flex items-center text-lg">
-                          <span className="mr-2">🔥</span> ABSOLUTELY YES! ({fYesVotes})
-                          <span className="ml-2 text-yellow-300">✨</span>
-                        </span>
-                      )}
-                    </button>
+                        <button 
+                          className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-green-800 text-white font-bold rounded-lg hover:from-green-700 hover:to-green-900 transition-all transform hover:scale-[1.03] hover:shadow-lg disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center"
+                          onClick={() => castVote("fYes")}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <span className="flex items-center text-lg">
+                              <span className="mr-2">🔥</span> ABSOLUTELY YES! ({totalVotes.fYes})
+                              <span className="ml-2 text-yellow-300">✨</span>
+                            </span>
+                          )}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+            
+            {/* Wallet Connection Prompt Modal */}
+            {showWalletPrompt && (
+              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                  <h3 className="text-xl font-bold mb-4">Connect Wallet or Vote Locally?</h3>
+                  <p className="text-gray-300 mb-2">
+                    You selected: <span className="font-bold text-green-400">
+                      {showWalletPrompt === "yes" ? "Yes, I Agree" : "ABSOLUTELY YES!"}
+                    </span>
+                  </p>
+                  <p className="text-gray-300 mb-6">
+                    You can connect a wallet to record your vote on the blockchain and receive an NFT badge,
+                    or you can vote without a wallet but your vote will only be stored locally.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button
+                      onClick={() => {
+                        connectWalletAfterVoting();
+                        setShowWalletPrompt(null);
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-md transition-colors"
+                    >
+                      Connect Wallet
+                    </button>
+                    <button
+                      onClick={() => voteWithoutWallet(showWalletPrompt)}
+                      className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-md transition-colors"
+                    >
+                      Vote Without Wallet
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setShowWalletPrompt(null)}
+                    className="mt-4 text-gray-400 hover:text-white text-sm w-full"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
             
             <div className="mt-8 text-center">
               <div className="mt-6 pt-4 border-t border-gray-800">
@@ -431,9 +678,62 @@ function App() {
             <p className="text-xs text-gray-500">
               &copy; {new Date().getFullYear()} Imran Khan Vote. All rights reserved. This site is not affiliated with any political party.
             </p>
+            
+            {/* Development Mode Debug Button */}
+            {isDev && (
+              <button 
+                onClick={toggleDebugPanel} 
+                className="mt-4 text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded hover:bg-gray-700"
+              >
+                {showDebugPanel ? "Hide Debug Info" : "Show Debug Info"}
+              </button>
+            )}
           </div>
         </div>
       </footer>
+      
+      {/* Development Mode Debug Panel */}
+      {isDev && showDebugPanel && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 p-4 text-xs font-mono text-gray-300 z-50">
+          <h3 className="font-bold mb-2 text-green-400">Development Mode Debug Panel</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-bold mb-1 text-yellow-400">Blockchain Votes:</h4>
+              <p>Yes Votes: {yesVotes}</p>
+              <p>Absolutely Yes Votes: {fYesVotes}</p>
+            </div>
+            <div>
+              <h4 className="font-bold mb-1 text-yellow-400">Local Votes (Shared):</h4>
+              <p>Yes Votes: {localVotes.yes}</p>
+              <p>Absolutely Yes Votes: {localVotes.fYes}</p>
+            </div>
+          </div>
+          <div className="mt-2">
+            <h4 className="font-bold mb-1 text-yellow-400">User State:</h4>
+            <p>Has Voted: {hasVoted ? "Yes" : "No"}</p>
+            <p>Vote Choice: {userVoteChoice || "None"}</p>
+            <p>Wallet Connected: {account ? "Yes" : "No"}</p>
+            {account && <p>Account: {account}</p>}
+          </div>
+          <div className="mt-2 flex space-x-2">
+            <button 
+              onClick={resetLocalVotes}
+              className="bg-red-900 hover:bg-red-800 text-white px-2 py-1 rounded text-xs"
+            >
+              Reset Local Votes
+            </button>
+            <button 
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className="bg-red-900 hover:bg-red-800 text-white px-2 py-1 rounded text-xs"
+            >
+              Clear All Storage & Reload
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
