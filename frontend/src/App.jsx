@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { ethers } from "ethers";
 import Articles from "./components/Articles";
 
-// This will be updated after contract deployment
-const CONTRACT_ADDRESS = "0x52d3778ffbB1024b44D55214b3385e1e0F7A1354"; 
+// Contract is deployed on Ethereum Mainnet (Chain ID 1)
+// Users must connect to Ethereum Mainnet to interact with the contract
+const CONTRACT_ADDRESS = "0x616b8A47d72E8814F25672f4020029Afd54FCEe5"; 
 const ABI = [
   "function voteYes() public",
   "function voteFYes() public",
-  "function getVotes() public view returns (uint256, uint256)"
+  "function getVotes() public view returns (uint256, uint256)",
+  "function yesVotes() public view returns (uint256)",
+  "function fYesVotes() public view returns (uint256)"
 ];
 
 // Development mode flag
@@ -110,6 +113,12 @@ const isMetaMaskInstalled = () => {
       return hasMetaMaskProvider;
     }
     
+    // Firefox-specific detection - try to detect MetaMask by checking for specific methods
+    if (window.ethereum.request && window.ethereum._metamask) {
+      console.log("Detected MetaMask in Firefox via _metamask property");
+      return true;
+    }
+    
     console.log("MetaMask not detected");
     return false;
   } catch (error) {
@@ -144,6 +153,12 @@ const getMetaMaskProvider = () => {
         console.log("Found MetaMask provider in providers array");
         return metaMaskProvider;
       }
+    }
+    
+    // Firefox-specific detection - if we detect _metamask property, use the ethereum object
+    if (window.ethereum.request && window.ethereum._metamask) {
+      console.log("Using ethereum object as provider for Firefox MetaMask");
+      return window.ethereum;
     }
     
     console.log("No MetaMask provider found");
@@ -207,10 +222,10 @@ function App() {
           setAccount(accounts[0]);
           
           // Create provider, signer and contract instances
-          const ethersProvider = new ethers.BrowserProvider(provider);
+          const ethersProvider = new ethers.providers.Web3Provider(provider);
           setProvider(ethersProvider);
           
-          const signer = await ethersProvider.getSigner();
+          const signer = ethersProvider.getSigner();
           setSigner(signer);
           
           const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
@@ -283,41 +298,119 @@ function App() {
     if (!contractInstance) return;
     
     try {
-      const votes = await contractInstance.getVotes();
-      setYesVotes(Number(votes[0]));
-      setFYesVotes(Number(votes[1]));
+      console.log("Attempting to fetch votes from contract...");
+      
+      try {
+        // First try the getVotes() function
+        console.log("Trying getVotes() method...");
+        const votes = await contractInstance.getVotes();
+        console.log("Votes received from blockchain via getVotes():", votes);
+        setYesVotes(Number(votes[0]));
+        setFYesVotes(Number(votes[1]));
+      } catch (getVotesError) {
+        console.error("Error using getVotes() method:", getVotesError);
+        
+        // If getVotes() fails, try individual getter functions
+        console.log("Trying individual getter functions...");
+        try {
+          const yesVotesResult = await contractInstance.yesVotes();
+          const fYesVotesResult = await contractInstance.fYesVotes();
+          
+          console.log("Yes votes from yesVotes():", yesVotesResult);
+          console.log("FYes votes from fYesVotes():", fYesVotesResult);
+          
+          setYesVotes(Number(yesVotesResult));
+          setFYesVotes(Number(fYesVotesResult));
+        } catch (individualError) {
+          console.error("Error using individual getter functions:", individualError);
+          throw individualError; // Re-throw to be caught by the outer catch
+        }
+      }
     } catch (error) {
       console.error("Error fetching votes:", error);
+      // Don't show an alert for this error as it's not critical
     }
   };
 
+  // Cast a vote on the blockchain
   const castVote = async (choice) => {
-    if (contract) {
-      // If wallet is connected, cast blockchain vote
-      setLoading(true);
-      try {
-        const tx = choice === "yes" 
-          ? await contract.voteYes() 
-          : await contract.voteFYes();
-        
-        await tx.wait();
-        fetchVotes(contract);
-        
-        // Also mark as voted locally and save the choice
-        setHasVoted(true);
-        setUserVoteChoice(choice);
-        localStorage.setItem("hasVoted", JSON.stringify(true));
-        localStorage.setItem("userVoteChoice", choice);
-      } catch (error) {
-        console.error("Error casting vote:", error);
-        alert("Error casting vote. Check console for details.");
-      } finally {
-        setLoading(false);
+    if (!contract) {
+      console.log("No contract instance available, attempting to connect wallet");
+      const connected = await connectWalletAfterVoting();
+      
+      if (!connected) {
+        console.log("Failed to connect wallet");
+        alert("A wallet connection is required to vote. Please connect your wallet and try again.");
+        return;
       }
-    } else {
-      // If no wallet is connected, prompt to connect wallet
-      alert("Please connect a wallet to vote. Your vote will be recorded on the blockchain.");
-      connectWalletAfterVoting();
+      
+      // If we just connected the wallet, we need to wait for the contract to be set
+      if (!contract) {
+        console.log("Contract still not available after connecting wallet");
+        alert("There was an issue connecting to the voting contract. Please try again later.");
+        return;
+      }
+    }
+    
+    // If we have a contract, proceed with voting
+    console.log(`Casting vote: ${choice}`);
+    setLoading(true);
+    
+    try {
+      console.log("Preparing transaction options");
+      
+      // Set gas limit and price for Ethereum mainnet
+      const options = {
+        gasLimit: ethers.utils.hexlify(2000000), // Higher gas limit for Ethereum mainnet
+        gasPrice: ethers.utils.parseUnits("1", "gwei"), // Ultra-low gas price (1 gwei)
+      };
+      
+      console.log("Transaction options:", options);
+      
+      // Execute the appropriate contract function based on the choice
+      console.log(`Executing contract.${choice === "yes" ? "voteYes" : "voteFYes"}()`);
+      
+      const tx = choice === "yes" 
+        ? await contract.voteYes(options) 
+        : await contract.voteFYes(options);
+      
+      console.log("Transaction sent:", tx);
+      console.log("Transaction hash:", tx.hash);
+      console.log("Waiting for transaction confirmation...");
+      
+      // Wait for the transaction to be mined
+      const receipt = await tx.wait();
+      console.log("Transaction confirmed:", receipt);
+      
+      // Update vote counts
+      await fetchVotes(contract);
+      
+      // Set user's vote choice
+      setUserVoteChoice(choice);
+      setHasVoted(true);
+      
+      // Show success message
+      alert(`Your vote has been successfully recorded on the blockchain! Transaction hash: ${tx.hash}`);
+      
+    } catch (error) {
+      console.error("Error casting vote:", error);
+      
+      // Handle specific error cases
+      if (error.code === "ACTION_REJECTED") {
+        alert("You rejected the transaction. Your vote was not recorded.");
+      } else if (error.message && error.message.includes("gas required exceeds allowance")) {
+        alert("Transaction failed: Not enough ETH to pay for gas. Please add ETH to your wallet and try again.");
+      } else if (error.message && error.message.includes("nonce")) {
+        alert("Transaction failed: Nonce issue. Please reset your MetaMask account or try again later.");
+      } else if (error.message && error.message.includes("already voted")) {
+        alert("You have already voted! Each wallet can only vote once.");
+      } else if (error.message && error.message.includes("network changed")) {
+        alert("Network changed during transaction. Please ensure you're connected to Ethereum Mainnet and try again.");
+      } else {
+        alert(`Error casting vote: ${error.message || "Unknown error"}. Please try again.`);
+      }
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -384,7 +477,32 @@ function App() {
         
         try {
           console.log("Requesting accounts...");
-          const accounts = await provider.request({ method: 'eth_requestAccounts' });
+          
+          // Try to detect if we're in Firefox and handle differently if needed
+          const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+          console.log("Is Firefox browser:", isFirefox);
+          
+          let accounts;
+          try {
+            // Standard method to request accounts
+            accounts = await provider.request({ method: 'eth_requestAccounts' });
+          } catch (requestError) {
+            console.error("Error requesting accounts:", requestError);
+            
+            // If the first attempt failed, try an alternative approach for Firefox
+            if (isFirefox && provider.enable) {
+              console.log("Trying alternative enable() method for Firefox");
+              try {
+                accounts = await provider.enable();
+              } catch (enableError) {
+                console.error("Error with enable() method:", enableError);
+                throw enableError;
+              }
+            } else {
+              throw requestError;
+            }
+          }
+          
           console.log("Accounts received:", accounts);
           
           if (!accounts || accounts.length === 0) {
@@ -396,33 +514,152 @@ function App() {
           
           // Create provider, signer and contract instances
           console.log("Creating ethers provider...");
-          const ethersProvider = new ethers.BrowserProvider(provider);
-          setProvider(ethersProvider);
-          
-          console.log("Getting signer...");
-          const signer = await ethersProvider.getSigner();
-          setSigner(signer);
-          
-          console.log("Creating contract instance...");
-          const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-          setContract(contract);
-          
-          // Fetch blockchain votes
-          console.log("Fetching votes from blockchain...");
-          fetchVotes(contract);
-          
-          // If this was after voting, notify user
-          if (hasVoted && userVoteChoice) {
-            alert("Your wallet is now connected! Your local vote will be migrated to the blockchain when you cast a vote using your wallet.");
+          try {
+            const ethersProvider = new ethers.providers.Web3Provider(provider);
+            setProvider(ethersProvider);
+            
+            console.log("Getting network information...");
+            const network = await ethersProvider.getNetwork();
+            console.log("Connected to network:", network);
+            
+            // Check if user is on Ethereum Mainnet
+            const chainId = Number(network.chainId);
+            console.log("Chain ID:", chainId);
+            
+            // Ethereum Mainnet chainId is 1
+            if (chainId !== 1) {
+              console.log("User is not on Ethereum Mainnet");
+              
+              // Ask user to switch to Ethereum Mainnet
+              try {
+                await provider.request({
+                  method: 'wallet_switchEthereumChain',
+                  params: [{ chainId: '0x1' }], // 0x1 is the hexadecimal representation of 1
+                });
+                
+                console.log("Successfully switched to Ethereum Mainnet");
+                
+                // Refresh the page after switching networks
+                window.location.reload();
+                return true;
+              } catch (switchError) {
+                // This error code indicates that the chain has not been added to MetaMask
+                if (switchError.code === 4902) {
+                  try {
+                    await provider.request({
+                      method: 'wallet_addEthereumChain',
+                      params: [{
+                        chainId: '0x1',
+                        chainName: 'Ethereum Mainnet',
+                        nativeCurrency: {
+                          name: 'ETH',
+                          symbol: 'ETH',
+                          decimals: 18
+                        },
+                        rpcUrls: ['https://mainnet.infura.io/v3/'],
+                        blockExplorerUrls: ['https://etherscan.io']
+                      }]
+                    });
+                    
+                    // Refresh the page after adding the network
+                    window.location.reload();
+                    return true;
+                  } catch (addError) {
+                    console.error("Error adding Ethereum Mainnet:", addError);
+                    alert("Please add the Ethereum Mainnet to your wallet manually and try again.");
+                  }
+                } else {
+                  console.error("Error switching to Ethereum Mainnet:", switchError);
+                  alert("Please switch to the Ethereum Mainnet in your wallet and try again.");
+                  return false;
+                }
+              }
+            }
+            
+            console.log("Getting signer...");
+            const signer = ethersProvider.getSigner();
+            setSigner(signer);
+            
+            console.log("Verifying signer address...");
+            const signerAddress = await signer.getAddress();
+            console.log("Signer address:", signerAddress);
+            
+            console.log("Creating contract instance...");
+            console.log("Contract address:", CONTRACT_ADDRESS);
+            console.log("Contract ABI:", ABI);
+            
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+            setContract(contract);
+            
+            // Verify contract interaction
+            console.log("Verifying contract instance...");
+            try {
+              // Try to call a read-only function to verify the contract is working
+              console.log("Attempting to verify contract with yesVotes()...");
+              try {
+                const yesVotesCount = await contract.yesVotes();
+                console.log("Contract verification successful with yesVotes(), count:", yesVotesCount);
+                
+                // Try to get fYesVotes as well
+                const fYesVotesCount = await contract.fYesVotes();
+                console.log("Successfully retrieved fYesVotes(), count:", fYesVotesCount);
+                
+                // Set the vote counts
+                setYesVotes(Number(yesVotesCount));
+                setFYesVotes(Number(fYesVotesCount));
+              } catch (yesVotesError) {
+                console.error("Error with yesVotes(), trying getVotes():", yesVotesError);
+                
+                // Try getVotes as fallback
+                const votes = await contract.getVotes();
+                console.log("Contract verification successful with getVotes(), votes:", votes);
+                
+                // Set the vote counts
+                setYesVotes(Number(votes[0]));
+                setFYesVotes(Number(votes[1]));
+              }
+              
+              // Fetch blockchain votes
+              console.log("Fetching votes from blockchain...");
+              fetchVotes(contract);
+              
+              // If this was after voting, notify user
+              if (hasVoted && userVoteChoice) {
+                alert("Your wallet is now connected! Your local vote will be migrated to the blockchain when you cast a vote using your wallet.");
+              }
+              
+              // Hide wallet options if they were showing
+              if (showWalletOptions) {
+                setShowWalletOptions(false);
+              }
+              
+              console.log("Wallet connection process completed successfully");
+              return true;
+            } catch (contractError) {
+              console.error("Error verifying contract:", contractError);
+              
+              // Check if the error is related to the contract not being deployed on this network
+              if (contractError.message && (
+                  contractError.message.includes("call revert exception") || 
+                  contractError.message.includes("contract not deployed")
+              )) {
+                alert("The voting contract is not deployed on the current network. Please switch to the Ethereum Mainnet.");
+              } else {
+                alert(`Error connecting to voting contract: ${contractError.message || "Unknown error"}`);
+              }
+              
+              // We'll still consider the wallet connected, but the contract interaction failed
+              if (showWalletOptions) {
+                setShowWalletOptions(false);
+              }
+              return false;
+            }
+          } catch (providerError) {
+            console.error("Error setting up provider or signer:", providerError);
+            alert(`Error connecting to Ethereum: ${providerError.message || "Unknown error"}`);
+            setShowWalletOptions(true);
+            return false;
           }
-          
-          // Hide wallet options if they were showing
-          if (showWalletOptions) {
-            setShowWalletOptions(false);
-          }
-          
-          console.log("Wallet connection process completed successfully");
-          return true;
         } catch (error) {
           console.error("Error connecting to MetaMask despite it being detected:", error);
           // If there was an error connecting, show wallet options as fallback
@@ -479,7 +716,32 @@ function App() {
     try {
       // Request accounts
       console.log("Requesting accounts...");
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      
+      // Try to detect if we're in Firefox and handle differently if needed
+      const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+      console.log("Is Firefox browser:", isFirefox);
+      
+      let accounts;
+      try {
+        // Standard method to request accounts
+        accounts = await provider.request({ method: 'eth_requestAccounts' });
+      } catch (requestError) {
+        console.error("Error requesting accounts:", requestError);
+        
+        // If the first attempt failed, try an alternative approach for Firefox
+        if (isFirefox && provider.enable) {
+          console.log("Trying alternative enable() method for Firefox");
+          try {
+            accounts = await provider.enable();
+          } catch (enableError) {
+            console.error("Error with enable() method:", enableError);
+            throw enableError;
+          }
+        } else {
+          throw requestError;
+        }
+      }
+      
       console.log("Accounts received:", accounts);
       
       if (!accounts || accounts.length === 0) {
@@ -488,24 +750,122 @@ function App() {
       
       // Create ethers provider
       console.log("Creating ethers provider...");
-      const ethersProvider = new ethers.BrowserProvider(provider);
+      const ethersProvider = new ethers.providers.Web3Provider(provider);
       
       // Get network information
       const network = await ethersProvider.getNetwork();
       console.log("Connected to network:", network);
       
+      // Check if user is on Ethereum Mainnet
+      const chainId = Number(network.chainId);
+      console.log("Chain ID:", chainId);
+      
+      // Ethereum Mainnet chainId is 1
+      if (chainId !== 1) {
+        console.log("User is not on Ethereum Mainnet");
+        
+        const switchToEthereum = confirm("You are not connected to the Ethereum Mainnet. Would you like to switch to Ethereum now?");
+        
+        if (switchToEthereum) {
+          try {
+            await provider.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x1' }], // 0x1 is the hexadecimal representation of 1
+            });
+            
+            alert("Successfully switched to Ethereum Mainnet. Please run the test again.");
+            return;
+          } catch (switchError) {
+            // This error code indicates that the chain has not been added to MetaMask
+            if (switchError.code === 4902) {
+              try {
+                await provider.request({
+                  method: 'wallet_addEthereumChain',
+                  params: [{
+                    chainId: '0x1',
+                    chainName: 'Ethereum Mainnet',
+                    nativeCurrency: {
+                      name: 'ETH',
+                      symbol: 'ETH',
+                      decimals: 18
+                    },
+                    rpcUrls: ['https://mainnet.infura.io/v3/'],
+                    blockExplorerUrls: ['https://etherscan.io']
+                  }]
+                });
+                
+                alert("Ethereum Mainnet has been added to your wallet. Please run the test again.");
+                return;
+              } catch (addError) {
+                console.error("Error adding Ethereum Mainnet:", addError);
+                alert("Could not add Ethereum Mainnet. Please add it manually in your wallet settings.");
+              }
+            } else {
+              console.error("Error switching to Ethereum Mainnet:", switchError);
+              alert("Could not switch to Ethereum Mainnet. Please switch manually in your wallet settings.");
+            }
+          }
+        }
+        
+        alert(`Warning: You are currently on network ${network.name} (Chain ID: ${chainId}), but the voting contract is deployed on Ethereum Mainnet (Chain ID: 1).`);
+      }
+      
       // Get signer
       console.log("Getting signer...");
-      const signer = await ethersProvider.getSigner();
+      const signer = ethersProvider.getSigner();
       console.log("Signer address:", await signer.getAddress());
       
-      // Test complete
-      console.log("=== WALLET CONNECTION TEST SUCCESSFUL ===");
-      alert(`Successfully connected to wallet!\nAddress: ${accounts[0]}\nNetwork: ${network.name}`);
+      // Test contract connection
+      console.log("Testing contract connection...");
+      console.log("Contract address:", CONTRACT_ADDRESS);
+      console.log("Contract ABI:", ABI);
       
+      try {
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        console.log("Contract instance created");
+        
+        // Try to call a read-only function
+        console.log("Attempting to verify contract...");
+        
+        try {
+          console.log("Trying yesVotes()...");
+          const yesVotesCount = await contract.yesVotes();
+          console.log("yesVotes() successful:", yesVotesCount.toString());
+          
+          console.log("Trying fYesVotes()...");
+          const fYesVotesCount = await contract.fYesVotes();
+          console.log("fYesVotes() successful:", fYesVotesCount.toString());
+          
+          alert(`Wallet connection test successful! Connected to account: ${accounts[0]}\nNetwork: ${network.name}\nContract is accessible and working.\nCurrent votes: Yes=${yesVotesCount}, FYes=${fYesVotesCount}`);
+        } catch (individualError) {
+          console.error("Error with individual vote getters:", individualError);
+          
+          try {
+            console.log("Trying getVotes()...");
+            const votes = await contract.getVotes();
+            console.log("getVotes() successful:", votes.toString());
+            
+            alert(`Wallet connection test successful! Connected to account: ${accounts[0]}\nNetwork: ${network.name}\nContract is accessible and working.\nCurrent votes: Yes=${votes[0]}, FYes=${votes[1]}`);
+          } catch (getVotesError) {
+            console.error("Error with getVotes():", getVotesError);
+            throw getVotesError;
+          }
+        }
+      } catch (contractError) {
+        console.error("Error testing contract:", contractError);
+        
+        if (contractError.message && (
+            contractError.message.includes("call revert exception") || 
+            contractError.message.includes("contract not deployed")
+        )) {
+          alert(`Wallet connected successfully, but the contract is not deployed on the current network (${network.name}). Please switch to the Ethereum Mainnet.`);
+        } else {
+          alert(`Wallet connected successfully, but there was an error connecting to the contract: ${contractError.message || "Unknown error"}`);
+        }
+      }
     } catch (error) {
-      console.error("Error testing wallet connection:", error);
-      alert(`Error testing wallet connection: ${error.message || "Unknown error"}`);
+      console.error("Error in wallet connection test:", error);
+      alert(`Wallet connection test failed: ${error.message || "Unknown error"}`);
     }
   };
 
@@ -642,10 +1002,9 @@ function App() {
                       <div className="bg-green-900/20 border-l-4 border-green-500 p-4 mb-6 rounded">
                         <h3 className="font-bold text-lg text-green-400 mb-2">Benefits of Voting</h3>
                         <ul className="list-disc pl-5 text-gray-200">
-                          <li className="mb-1">Commemorative NFT Badge: Each voter receives a unique digital collectible proving their support</li>
+                          <li className="mb-1">Blockchain Verification: Your support is permanently recorded on the Ethereum blockchain</li>
                           <li className="mb-1">Priority Access: Early access to future Imran Khan digital initiatives</li>
-                          <li className="mb-1">Community Membership: Join an exclusive community of supporters</li>
-                          <li>Historical Record: Your vote is permanently recorded on the Ethereum blockchain</li>
+                          <li>Community Membership: Join an exclusive community of supporters</li>
                         </ul>
                       </div>
                     ) : (
@@ -660,7 +1019,7 @@ function App() {
                             className="text-yellow-400 font-semibold underline hover:text-yellow-300"
                           >
                             Connect your wallet
-                          </button> to vote and receive an NFT badge and other benefits.
+                          </button> to vote and have your support permanently recorded on the blockchain.
                         </p>
                       </div>
                     )}
@@ -802,8 +1161,17 @@ function App() {
                         
                         <button
                           onClick={() => {
-                            // Open MetaMask extension
-                            window.open('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html');
+                            // Open MetaMask extension - detect browser and use appropriate method
+                            const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+                            
+                            if (isFirefox) {
+                              // Firefox MetaMask extension URL
+                              window.open('https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/');
+                            } else {
+                              // Chrome MetaMask extension URL
+                              window.open('chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html');
+                            }
+                            
                             setTimeout(() => {
                               setShowWalletOptions(false);
                               setTimeout(connectWalletAfterVoting, 1000);
@@ -863,19 +1231,12 @@ function App() {
                       </>
                     )}
                     
-                    <button 
-                      onClick={() => setShowWalletOptions(false)}
-                      className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-md transition-colors w-full"
-                    >
-                      Continue Without Wallet
-                    </button>
-                  </div>
-                  
-                  <div className="mt-6 text-xs text-gray-400">
-                    <p>
-                      Note: Connecting a wallet allows you to receive an NFT badge and have your vote 
-                      permanently recorded on the Ethereum blockchain.
-                    </p>
+                    <div className="mt-6 text-xs text-gray-400">
+                      <p>
+                        Note: A wallet connection is required to vote. Your vote will be 
+                        permanently recorded on the Ethereum blockchain.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -886,11 +1247,9 @@ function App() {
                 <h3 className="font-medium text-sm text-gray-300 mb-2">How Your Vote Makes a Difference:</h3>
                 <p className="text-sm text-gray-400 mb-2">
                   Your vote is more than just a number. It's a permanent declaration of support recorded on the Ethereum blockchain.
-                  The NFT badge you'll receive serves as both a collectible and proof of your early support.
                 </p>
                 <p className="text-sm text-gray-400 mb-4">
-                  <strong>Note:</strong> NFT badges will be airdropped to voter wallets within 14 days after voting.
-                  By voting, you're also granted membership in our exclusive community with access to future initiatives.
+                  <strong>Note:</strong> By voting, you're contributing to a transparent record of public opinion on the blockchain.
                 </p>
                 <div className="bg-black/30 rounded-lg p-4 max-w-lg mx-auto">
                   <h4 className="text-green-400 font-semibold mb-2">What's the difference?</h4>
@@ -991,7 +1350,7 @@ function App() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
               <p className="text-sm text-gray-400">
-                This dApp runs on Ethereum mainnet. Make sure your wallet is connected to the Ethereum network.
+                This dApp runs on Ethereum Mainnet. Make sure your wallet is connected to the Ethereum Mainnet.
               </p>
             </div>
             

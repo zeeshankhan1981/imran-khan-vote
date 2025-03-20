@@ -94,8 +94,9 @@ Polygon is significantly cheaper than Ethereum for gas fees, making it more acce
 
 3. **Test voting functionality**:
    - Verify that users are prompted to connect a wallet when attempting to vote
-   - Ensure votes are properly recorded on the blockchain
-   - Check that the NFT reward system works correctly
+   - Verify that votes are being recorded correctly
+   - Test wallet connection functionality
+   - Ensure the UI displays correctly on different devices
 
 ## 4. Maintenance and Monitoring
 

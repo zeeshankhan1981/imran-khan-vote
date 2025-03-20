@@ -1,8 +1,12 @@
 # Imran Khan Voting dApp
 
-A modern, decentralized application that allows users to vote on whether Imran Khan is the rightful Prime Minister of Pakistan following the February 8, 2024 elections. The application features a sleek UI, blockchain-based voting, and NFT rewards for voters.
+A modern, decentralized application that allows users to vote on whether Imran Khan is the rightful Prime Minister of Pakistan following the February 8, 2024 elections. The application features a sleek UI and blockchain-based voting.
 
 ![Imran Khan Vote App](https://i.imgur.com/example.png)
+
+## Overview
+
+This project is a decentralized voting application for Imran Khan, deployed on the Ethereum Mainnet. Users can vote "Yes" or "Free Yes" to show their support.
 
 ## Live Demo
 
@@ -11,11 +15,20 @@ The application is live at:
 - **Traditional Domain**: [http://pmimrankhan.xyz](http://pmimrankhan.xyz)
 - **Unstoppable Domain**: [pmimrankhan.unstoppable](https://pmimrankhan.unstoppable.link)
 
+## Server Information
+
+The imran-khan-vote application is hosted on a baremetal server with the following details:
+- **Server IP**: 95.216.25.234
+- **Domain**: pmimrankhan.xyz
+- **Managed at**: unstoppable domains
+- **SSH Access**: `ssh echoesofstreet` (passwordless SSH is configured)
+- **Application Path**: `/var/www/imran-khan-vote`
+
+
 ## Features
 
-- **Blockchain-Based Voting**: Secure, transparent voting on the Ethereum blockchain
+- **Blockchain-Based Voting**: Secure, transparent voting on the Ethereum Mainnet blockchain
 - **Wallet Required**: All votes require a wallet connection to ensure vote integrity
-- **NFT Rewards**: Each voter receives a commemorative NFT badge
 - **Multi-Tab Interface**: Vote, view election facts, and explore the timeline
 - **Mobile Responsive**: Optimized for all device sizes
 - **Web3 Integration**: Connect with MetaMask or other Ethereum wallets
@@ -32,14 +45,14 @@ The application is live at:
 
 The smart contract is a voting contract that allows users to vote "Yes" or "Absolutely Yes" to the question "Is Imran Khan the rightful Prime Minister of Pakistan?". The contract:
 
-- Records votes on the Ethereum blockchain
+- Records votes on the Ethereum Mainnet blockchain
 - Emits events for each vote cast
 - Maintains a permanent record of voter support
 
 ## Technical Stack
 
 - **Frontend**: React, Vite, TailwindCSS
-- **Blockchain**: Ethereum, Solidity
+- **Blockchain**: Ethereum Mainnet, Solidity
 - **Development**: Hardhat, Ethers.js
 - **Deployment**: Nginx, Baremetal Server, Unstoppable Domains
 
@@ -53,27 +66,26 @@ The smart contract is a voting contract that allows users to vote "Yes" or "Abso
 
 ### Smart Contract Deployment
 
-1. Install dependencies:
+1. Create a `.env` file in the root directory with the following variables:
    ```
-   npm install
-   ```
-
-2. Compile the contract:
-   ```
-   npx hardhat compile
+   PRIVATE_KEY=your_private_key
+   INFURA_API_KEY=your_infura_api_key
+   ETHERSCAN_API_KEY=your_etherscan_api_key
+   NETWORK=mainnet
    ```
 
-3. Start a local Hardhat node (for testing):
+2. Deploy the contract to Ethereum Mainnet:
    ```
-   npx hardhat node
-   ```
-
-4. Deploy the contract to the local network:
-   ```
-   npx hardhat run scripts/deploy.js --network localhost
+   npx hardhat run scripts/deploy-mainnet.js --network mainnet
    ```
 
-5. Note the deployed contract address and update it in the frontend code (`frontend/src/App.jsx`).
+   > **Note**: The deployment script uses an ultra-low gas price (1 gwei) to keep deployment costs under $5. The script will show an estimated cost before proceeding.
+
+3. Note the deployed contract address and update it in the frontend code (`frontend/src/App.jsx`).
+
+> **IMPORTANT**: The production contract is currently deployed on **Ethereum Mainnet** at address `0x616b8A47d72E8814F25672f4020029Afd54FCEe5`. Users must connect to Ethereum Mainnet to interact with the contract.
+
+> **Contract Verification**: The contract has been verified on Etherscan and can be viewed at [https://etherscan.io/address/0x616b8A47d72E8814F25672f4020029Afd54FCEe5#code](https://etherscan.io/address/0x616b8A47d72E8814F25672f4020029Afd54FCEe5#code)
 
 ### Frontend Setup
 
@@ -96,6 +108,13 @@ The smart contract is a voting contract that allows users to vote "Yes" or "Abso
 
 5. Open your browser and navigate to the provided URL (usually http://localhost:5173).
 
+## Deployment Checklist
+
+1. Deploy the smart contract to Ethereum Mainnet
+2. Update the contract address in the frontend
+3. Build the frontend
+4. Deploy the frontend to your hosting provider
+
 ## Deploying to a Public Network
 
 To deploy to a public network like Ethereum Mainnet or Polygon:
@@ -113,8 +132,7 @@ To deploy to a public network like Ethereum Mainnet or Polygon:
    ```
 
    Available networks:
-   - `mainnet` - Ethereum mainnet
-   - `sepolia` - Ethereum Sepolia testnet
+   - `mainnet` - Ethereum Mainnet
    - `polygon` - Polygon mainnet
    - `polygon_mumbai` - Polygon Mumbai testnet
 

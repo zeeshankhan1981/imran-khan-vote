@@ -1,5 +1,7 @@
 {
-  "contractAddress": "0x52d3778ffbB1024b44D55214b3385e1e0F7A1354",
-  "network": "mainnet",
-  "deployedAt": "Tue Mar 18 21:57:50 EDT 2025"
+  "contractAddress": "0x616b8A47d72E8814F25672f4020029Afd54FCEe5",
+  "network": "ethereum-mainnet",
+  "chainId": 1,
+  "deployedAt": "2025-03-20T14:25:30-04:00",
+  "notes": "Contract is deployed on Ethereum Mainnet (Chain ID 1). Users must connect to Ethereum Mainnet to interact with the contract. Contract verified on Etherscan: https://etherscan.io/address/0x616b8A47d72E8814F25672f4020029Afd54FCEe5#code"
 }
