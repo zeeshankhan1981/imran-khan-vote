@@ -55,6 +55,7 @@ ssh echoesofstreet << 'EOF'
   
   # Move frontend files to the right location
   echo "Setting up frontend files..."
+  mkdir -p /var/www/imran-khan-vote/public
   rm -rf /var/www/imran-khan-vote/public/*
   cp -r /var/www/imran-khan-vote/frontend/dist/* /var/www/imran-khan-vote/public/
   
