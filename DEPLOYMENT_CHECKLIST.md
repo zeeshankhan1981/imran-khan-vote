@@ -38,7 +38,9 @@ Use this checklist to ensure you've completed all necessary steps for deploying 
 
 - [ ] Visit the deployed website
 - [ ] Connect MetaMask to Polygon network
-- [ ] Test voting functionality
+- [ ] Test voting functionality with wallet connection
+- [ ] Verify wallet connection requirement is enforced
+- [ ] Check that existing blockchain votes are preserved
 - [ ] Check mobile responsiveness
 - [ ] Monitor server and application logs
 

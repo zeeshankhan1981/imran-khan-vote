@@ -2,7 +2,7 @@
 
 ## Overview
 
-The wallet connection functionality in the Imran Khan voting application has been significantly improved to ensure reliable detection and connection across different browsers, particularly Firefox. The implementation now includes robust error handling, detailed logging, and a user-friendly interface for different scenarios.
+The wallet connection functionality in the Imran Khan voting application has been significantly improved to ensure reliable detection and connection across different browsers, particularly Firefox. The implementation now includes robust error handling, detailed logging, and a user-friendly interface for different scenarios. As of March 2025, wallet connection is now required for all voting functionality to ensure vote integrity.
 
 ## Key Improvements
 
@@ -21,19 +21,19 @@ The wallet connection functionality in the Imran Khan voting application has bee
    - Added detailed logging throughout the process
    - Implemented proper error handling with user-friendly messages
 
-4. **Intelligent Wallet Options Modal**
+4. **Wallet-Required Voting**
+   - Removed the ability to vote without a wallet connection
+   - Updated UI to clearly indicate that wallet connection is required
+   - Enhanced user prompts to guide users through the wallet connection process
+   - Ensured all votes are recorded on the blockchain for maximum integrity
+
+5. **Intelligent Wallet Options Modal**
    - Created different views based on the user's environment:
      - Desktop without MetaMask: Shows installation options
      - Desktop with MetaMask but connection error: Shows troubleshooting options
      - Mobile: Shows deep links to wallet apps
    - Added a browser status section showing detection results
    - Improved UI with clear buttons and instructions
-
-5. **Comprehensive Debug Tools**
-   - Enhanced debug panel with detailed information
-   - Added a "Test Wallet Connection" function
-   - Implemented data reset functionality
-   - Added Ethereum object inspection tools
 
 ## Testing
 

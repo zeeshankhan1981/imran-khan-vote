@@ -80,6 +80,7 @@ Polygon is significantly cheaper than Ethereum for gas fees, making it more acce
 
 2. **Connect with MetaMask**:
    - Ensure MetaMask is configured for Polygon network
+   - Wallet connection is now required for voting to ensure vote integrity
    - For Mumbai testnet:
      - Network Name: Mumbai Testnet
      - RPC URL: https://rpc-mumbai.maticvigil.com/
@@ -91,7 +92,10 @@ Polygon is significantly cheaper than Ethereum for gas fees, making it more acce
      - Chain ID: 137
      - Currency Symbol: MATIC
 
-3. **Test voting functionality**
+3. **Test voting functionality**:
+   - Verify that users are prompted to connect a wallet when attempting to vote
+   - Ensure votes are properly recorded on the blockchain
+   - Check that the NFT reward system works correctly
 
 ## 4. Maintenance and Monitoring
 

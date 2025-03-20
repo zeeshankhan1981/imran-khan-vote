@@ -14,6 +14,7 @@ The application is live at:
 ## Features
 
 - **Blockchain-Based Voting**: Secure, transparent voting on the Ethereum blockchain
+- **Wallet Required**: All votes require a wallet connection to ensure vote integrity
 - **NFT Rewards**: Each voter receives a commemorative NFT badge
 - **Multi-Tab Interface**: Vote, view election facts, and explore the timeline
 - **Mobile Responsive**: Optimized for all device sizes
